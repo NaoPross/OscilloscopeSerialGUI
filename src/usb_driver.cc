@@ -51,9 +51,9 @@ bool USBtmc::write(const char *txt)
     return true;
 }
 
-bool USBtmc::read(const char *buf, int len)
+bool USBtmc::read(void *buf, int len)
 {
-    if (len != ::read(this->devfd, (void *) buf, len)) {
+    if (len != ::read(this->devfd, buf, len)) {
         // fprintf(stderr, "%s\n", strerror(errno));
         return false;
     }

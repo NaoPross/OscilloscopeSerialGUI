@@ -9,6 +9,9 @@
 #include "usb_driver.h"
 
 #include <iostream>
+#include <string>
+#include <sstream>
+#include <fstream>
 #include <cctype>
 
 extern "C" {
@@ -84,26 +87,44 @@ void sigint_handler(int dummy)
 
 void shell(USBtmc *tek)
 {
-    std::string command;
+    std::istringstream *iss;
+    std::string text;
+    std::string cmd;
+    std::string par;
 
     while (tek->connected) {
         std::cout << "interactive> ";
-        std::cin >> command;
-        
-        if (!command.compare("/quit") || !command.compare("/q")) {
+
+        // catch ctrl+D / EOF
+        if (!std::getline(std::cin, text)) {
             break;
-        } else if (!command.compare("/readln") || !command.compare("/r")) {
-            std::cout << tek->readln() << std::endl;
+        } else if (text.empty()) {
             continue;
-        } else if (command[0] == '/') {
+        }
+
+        iss = new std::istringstream(text);
+        *iss >> cmd;
+        
+        if (cmd == "/quit" || cmd == "/q") {
+            break;
+        } else if (cmd == "/readln" || cmd == "/r") {
+            if (*iss) {
+                *iss >> par;
+                std::ofstream savefile;
+                savefile.open(par);
+                savefile << tek->readln() << std::endl;
+                savefile.close();
+            } else {
+                std::cout << tek->readln() << std::endl;
+            }
+            continue;
+        } else if (cmd.at(0) == '/') {
             continue;
         } 
 
-        for (auto it = command.begin(); it != command.end(); it++) {
+        tek->write(text.c_str());
 
-        }
-
-        tek->write(command.c_str());
+        delete iss;
     }
 }
 
