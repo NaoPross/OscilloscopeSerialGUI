@@ -32,7 +32,7 @@ public:
 
     bool connect();
     bool write(const char *txt);
-    bool read(const char *buf, int len);
+    bool read(void *buf, int len);
     std::string readln();
     void close();
 };

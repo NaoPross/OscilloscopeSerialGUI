@@ -14,13 +14,14 @@
 #include <fstream>
 #include <cctype>
 
+#if 0
 extern "C" {
 #include <signal.h>
 }
-
+#endif
 
 void usage();
-void sigint_handler(int dummy);
+// void sigint_handler(int dummy);
 
 void shell(USBtmc *tek);
 void screenshot(USBtmc *tek);
@@ -32,7 +33,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) {
         usage();
-        return -1;
+        return 0;
     }
 
     // try to load the device
@@ -43,6 +44,11 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    if (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
+        usage();
+        return 0;
+    }
+
     if (argc < 3) {
         tek.write("*IDN?\n");
         std::cout << "Connected to: " << tek.readln() << std::endl;
@@ -50,12 +56,16 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (!std::string(argv[2]).compare("shell")) {
+
+    if (std::string(argv[2]) == "shell") {
         shell(&tek);
-    } else if (!std::string(argv[2]).compare("screenshot")) {
+    } else if (std::string(argv[2]) == "screenshot") {
         screenshot(&tek);
-    } else if (!std::string(argv[2]).compare("dl-wave")) {
+    } else if (std::string(argv[2]) == "dl-wave") {
         dl_wave(&tek);
+    } else {
+        usage();
+        return 0;
     }
 
     if (tek.connected) {
@@ -80,13 +90,16 @@ void usage()
     ;
 }
 
+#if 0
 void sigint_handler(int dummy)
 {
     interrupted = true;
 }
+#endif
 
 void shell(USBtmc *tek)
 {
+    std::ofstream savefile;
     std::istringstream *iss;
     std::string text;
     std::string cmd;
@@ -108,15 +121,26 @@ void shell(USBtmc *tek)
         if (cmd == "/quit" || cmd == "/q") {
             break;
         } else if (cmd == "/readln" || cmd == "/r") {
-            if (*iss) {
-                *iss >> par;
-                std::ofstream savefile;
-                savefile.open(par);
-                savefile << tek->readln() << std::endl;
-                savefile.close();
-            } else {
+            if (!*iss) {
                 std::cout << tek->readln() << std::endl;
+                continue;
             }
+
+            *iss >> par;
+            savefile.open(par);
+            savefile << tek->readln() << std::endl;
+            savefile.close();
+            continue;
+        } else if (cmd == "/readbin" || cmd == "/rb") {
+            if (!*iss) {
+                std::cerr << "Usage: /readbin [filename]" << std::endl;
+                continue;
+            }
+
+            *iss >> par;
+            savefile.open(par);
+            // TODO: implement tek->readeof()
+            savefile.close();
             continue;
         } else if (cmd.at(0) == '/') {
             continue;
