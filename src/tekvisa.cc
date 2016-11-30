@@ -24,7 +24,7 @@ void usage();
 // void sigint_handler(int dummy);
 
 void shell(USBtmc *tek);
-void screenshot(USBtmc *tek);
+void screenshot(USBtmc *tek, const char *fname);
 void dl_wave(USBtmc *tek);
 
 static volatile bool interrupted = false;
@@ -60,7 +60,13 @@ int main(int argc, char *argv[])
     if (std::string(argv[2]) == "shell") {
         shell(&tek);
     } else if (std::string(argv[2]) == "screenshot") {
-        screenshot(&tek);
+        if (argc < 4) {
+            std::cout << "Usage: tekvisa [device] screenshot [filename]" 
+                      << std::endl;
+            return 0;
+        }
+
+        screenshot(&tek, argv[3]);
     } else if (std::string(argv[2]) == "dl-wave") {
         dl_wave(&tek);
     } else {
@@ -99,8 +105,8 @@ void sigint_handler(int dummy)
 
 void shell(USBtmc *tek)
 {
-    std::ofstream savefile;
     std::istringstream *iss;
+    std::ofstream savefile;
     std::string text;
     std::string cmd;
     std::string par;
@@ -121,7 +127,8 @@ void shell(USBtmc *tek)
         if (cmd == "/quit" || cmd == "/q") {
             break;
         } else if (cmd == "/readln" || cmd == "/r") {
-            if (!*iss) {
+            if ((*iss).eof()) {
+                delete iss;
                 std::cout << tek->readln() << std::endl;
                 continue;
             }
@@ -130,31 +137,57 @@ void shell(USBtmc *tek)
             savefile.open(par);
             savefile << tek->readln() << std::endl;
             savefile.close();
+            delete iss;
             continue;
         } else if (cmd == "/readbin" || cmd == "/rb") {
-            if (!*iss) {
+            if ((*iss).eof()) {
+                delete iss;
                 std::cerr << "Usage: /readbin [filename]" << std::endl;
                 continue;
             }
 
+            unsigned char *buffer = (unsigned char *) malloc(sizeof(unsigned char) * 1024);
+
             *iss >> par;
-            savefile.open(par);
-            // TODO: implement tek->readeof()
+            savefile.open(par, std::ios::out | std::ios::binary);
+    
+            while (tek->readbinblock(buffer, 1024)) {
+                savefile.write((char *) buffer, sizeof(buffer));
+            }
+
             savefile.close();
+
+            free(buffer);
+
+            delete iss;
             continue;
         } else if (cmd.at(0) == '/') {
+            delete iss;
             continue;
         } 
 
         tek->write(text.c_str());
-
         delete iss;
     }
 }
 
-void screenshot(USBtmc *tek)
+void screenshot(USBtmc *tek, const char *fname)
 {
-    std::cerr << "Unimplemented" << std::endl;
+    std::ofstream savefile;
+    unsigned char *buffer = (unsigned char *) malloc(sizeof(unsigned char) * 1024);
+
+    tek->write("HARDCOPY:PORT FILE\n");
+    tek->write("HARDCOPY:filename \"TEK.PNG\"\n");
+    tek->write("HARDCOPY START\n");
+
+    savefile.open(fname, std::ios::out | std::ios::binary);
+
+    while (tek->readbinblock(buffer, 1024)) {
+        savefile.write((char *) buffer, sizeof(buffer));
+    }
+
+    savefile.close();
+
 }
 
 void dl_wave(USBtmc *tek)

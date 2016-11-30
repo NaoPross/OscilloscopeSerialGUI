@@ -14,22 +14,25 @@ bool USBtmc::connect()
 {
     struct termios term;
     
-#if 0
-    if (!access(this->dev, F_OK)) {
+    if (access(this->dev, F_OK) != 0) {
         fprintf(stderr, "Device %s does not exists\n", this->dev);
+        // fprintf(stderr, "%s\n", strerror(errno));
         return false;
     }
-    if (!access(this->dev, R_OK)) {
-        fprintf(stderr, "Cannot read device: %s\n", this->dev);
-        return false;
-    }
-    if (!access(this->dev, W_OK)) {
-        fprintf(stderr, "Cannot write on device: %s\n", this->dev);
-        return false;
-    }
-#endif
 
-    this->devfd = open(this->dev, O_RDWR);
+    if (access(this->dev, R_OK) != 0) {
+        fprintf(stderr, "Cannot read device: %s\n", this->dev);
+        // fprintf(stderr, "%s\n", strerror(errno));
+        return false;
+    }
+
+    if (access(this->dev, W_OK) != 0) {
+        fprintf(stderr, "Cannot write on device: %s\n", this->dev);
+        // fprintf(stderr, "%s\n", strerror(errno));
+        return false;
+    }
+
+    this->devfd = open(this->dev, O_RDWR | O_NOCTTY | O_NDELAY);
 
     tcgetattr(this->devfd, &term);
     term.c_lflag &= ~ICANON;
@@ -51,9 +54,10 @@ bool USBtmc::write(const char *txt)
     return true;
 }
 
-bool USBtmc::read(void *buf, int len)
+bool USBtmc::read(char *buf, size_t len)
 {
-    if (len != ::read(this->devfd, buf, len)) {
+    int rv;
+    if ((rv = ::read(this->devfd, buf, len)) < 0) {
         // fprintf(stderr, "%s\n", strerror(errno));
         return false;
     }
@@ -61,18 +65,46 @@ bool USBtmc::read(void *buf, int len)
     return true;
 }
 
+bool USBtmc::readbinblock(unsigned char *buf, size_t size)
+{
+    int rv;
+    bool nodata = true;
+
+    rv = ::read(this->devfd, buf, size);
+
+    if (rv > 0) {
+        // fprintf(stderr, "%s\n", strerror(errno));
+        return false;
+    }
+
+    for (size_t i = 0; i < size; i++) {
+        if (buf[i] != 0) {
+            nodata = false;
+            break;
+        }
+    }
+    
+    return nodata;
+}
+
+bool USBtmc::readbin(char *buf)
+{
+    std::cerr << "Unimplemented" << std::endl;
+    return false;
+}
+
 std::string USBtmc::readln() 
 {
     std::string buf;
-    const char *tmpbuf = (const char *) malloc(sizeof(char));
+    char tmpbuf;
     int bytes;
 
     do {
-        bytes = ::read(this->devfd, (void *) tmpbuf, 1);
+        bytes = ::read(this->devfd, &tmpbuf, 1);
         if (bytes > 0) {
-            buf.append(tmpbuf);
+            buf.append(&tmpbuf);
         }
-    } while (tmpbuf[0] != '\n' && tmpbuf[0] != '\r');
+    } while (tmpbuf != '\n' && tmpbuf != '\r');
 
     return buf;
 }

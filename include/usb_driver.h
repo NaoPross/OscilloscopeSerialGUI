@@ -26,13 +26,16 @@ private:
 
 public:
     bool connected;
+    size_t max_buf_bytes = 10000;
 
     USBtmc(const char *dev);
     ~USBtmc();
 
     bool connect();
     bool write(const char *txt);
-    bool read(void *buf, int len);
+    bool read(char *buf, size_t len);
+    bool readbinblock(unsigned char *buf, size_t size);
+    bool readbin(char *buf);
     std::string readln();
     void close();
 };
