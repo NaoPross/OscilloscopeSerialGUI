@@ -1,0 +1,17 @@
+bin_PROGRAMS = tekvisaosc
+
+tekvisaosc_SOURCES = tekvisaosc.c \
+					 ui.c \
+					 tek_interface_linux.c 
+
+tekvisaosc_CFLAGS = -pedantic -Wall -Werror \
+					$(TEKVISAOSC_CFLAGS) \
+					$(WARN_CFLAGS) \
+					$(AM_CFLAGS) \
+					-g
+
+tekvisaosc_LDFLAGS = $(AM_LDFLAGS)
+
+tekvisaosc_LDADD = $(TEKVISAOSC_LIBS)
+
+CLEANFILES = *~ *.o
