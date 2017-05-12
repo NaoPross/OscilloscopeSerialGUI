@@ -13,6 +13,8 @@
 /test-driver
 /ylwrap
 
+/build-aux
+
 # http://www.gnu.org/software/autoconf
 
 /m4
@@ -29,7 +31,8 @@
 /depcomp
 /install-sh
 /missing
-/stamp-h1
+/stamp-h*
+/config.log
 
 # https://www.gnu.org/software/libtool/
 

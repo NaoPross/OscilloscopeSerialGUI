@@ -3,6 +3,9 @@
 
 #include <stdlib.h>
 
+int tek_open();
+int tek_close();
+
 int tek_write(void *data, size_t size);
 int tek_read(void *data, size_t size);
 
