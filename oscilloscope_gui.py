@@ -272,7 +272,7 @@ class NPSerialOscilloscopeGUI(ttk.Frame):
                 elif args[i] == "--stdout":
                     if args[i +1].lower() == "true":
                         self.stdout = True
-                    elif args[i +1].lower() == "false"
+                    elif args[i +1].lower() == "false":
                         self.stout = False
         
 
@@ -280,7 +280,7 @@ class NPSerialOscilloscopeGUI(ttk.Frame):
         self.fileoptions = FileOptions(self)
         self.instancectl = InstanceControl(self, refreshfunc=self.initserial, dlfunc=self.dl_picture)
         self.toolbar = Toolbar(self, dlfunc=self.dl_picture)
-        self.console = Console(self, self.stdout=True)
+        self.console = Console(self, stdout=True)
 
         self.fileoptions.pack(side="top", fill="both", expand=True)
         self.instancectl.pack(side="top", fill="both", expand=True)
